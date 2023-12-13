@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head xmlns:th="http://www/thymeleaf.org">
+    <meta charset="UTF-8">
+    <title>Title</title>
+    <link rel="stylesheet" href="/css/bootstrap.min.css">
+    <script src="/js/jquery-3.7.1.min.js"></script>
+    <link rel="stylesheet" href="/plugins/bootstraptable/bootstrap-table.min.css">
+
+
+</head>
+<body>
+
+<div class="container-fluid">
+    这是最基本的页面
+    <!-- Button trigger modal -->
+    <button type="button" class="btn btn-primary btn-lg" data-toggle="modal" data-target="#myModal" onclick="preAdd();">
+        新增学生
+    </button>
+
+
+
+
+
+    <form class="form-inline">
+        <div class="form-group">
+            <label for="searchName">请输入名字</label>
+            <input type="text" class="form-control" id="searchName" placeholder="请输入名称" name="searchName">
+        </div>
+
+        <button type="button" class="btn btn-default btn-primary" onclick="search();">查询</button>
+        <button type="button" class="btn btn-default btn-primary" onclick="editStudent();">修改</button>
+        <button type="button" class="btn btn-default btn-primary" onclick="deleteStudent();">删除</button>
+    </form>
+
+    <table class="table table-bordered" id="stuTable">
+
+    </table>
+</div>
+
+<div class="modal fade" tabindex="-1" role="dialog" id="myModal">
+    <div class="modal-dialog" role="document">
+        <div class="modal-content">
+            <div class="modal-header">
+                <button type="button" class="close" data-dismiss="modal" aria-label="Close"><span aria-hidden="true">&times;</span></button>
+                <h4 class="modal-title"> 学生信息</h4>
+            </div>
+            <div class="modal-body">
+
+                <!--表单-->
+                <form id="formStudent">
+                    <input hidden="hidden" id="id" name="id"/>
+
+                    <div class="form-group">
+                        <label for="no">学号</label>
+                        <input type="no" class="form-control" id="no" name="no" placeholder="学号" required minlength="10" maxlength="10">
+                    </div>
+                    <div class="form-group">
+
+                        <label for="name">姓名</label>
+                        <input type="text" class="form-control" id="name" name="name" placeholder="姓名" required minlength="2" maxlength="20">
+                    </div>
+                    <div class="form-group">
+                        <label for="password">密码</label>
+                        <input type="password" class="form-control" id="password" name="password" placeholder="密码">
+                    </div>
+
+                    <div class="form-group">
+                        <label for="sex">性别</label>
+                        <select class="form-control" id="sex" name="sex">
+                            <option value="1">男</option>
+                            <option value="2">女</option>
+
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="name">成绩</label>
+                        <input type="text" class="form-control" id="score" name="score" placeholder="成绩">
+                    </div>
+                </form>
+
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-primary" onclick="saveStudent()">保存</button>
+            </div>
+        </div><!-- /.modal-content -->
+    </div><!-- /.modal-dialog -->
+</div><!-- /.modal -->
+
+
+<script src="/js/bootstrap.min.js"></script>
+<script src="/plugins/bootstraptable/bootstrap-table.min.js"></script>
+<script src="/plugins/bootstraptable/locale/bootstrap-table-zh-CN.min.js"></script>
+
+<script src="/plugins/bootstraptable/jquery-validation-1.19.5/dist/jquery.validate.min.js"></script>
+<script src="/plugins/bootstraptable/jquery-validation-1.19.5/dist/localization/messages_zh.min.js"></script>
+
+<script type="text/javascript">
+
+
+
+function search(){
+        $('#stuTable').bootstrapTable("destroy");
+        loadTable();
+    }
+
+    function preAdd(){
+        $('#id').val(0);//提示新增
+    }
+    //新增或者更新
+    function saveStudent(){
+
+        let data=$("#formStudent").serialize();
+
+        let id=$("#id").val();
+        if(id<1){
+
+            $.ajax({
+                url:"/webapi/student/insert",
+                method:"post",
+                data:data
+
+            }).done(function (){
+                loadTable();
+
+                $('#myModal').modal('hide')
+
+            })
+        }else{
+            $.ajax({
+                url:"/webapi/student/update",
+                method:"put",
+                data:data
+
+            }).done(function (){
+                loadTable();
+
+                $('#myModal').modal('hide')
+
+            })
+        }
+
+
+    }
+
+    function  editStudent(){
+    var id=prompt("请输入id");
+        $('#myModal').modal('show');
+
+        $.ajax({
+
+            url:'/webapi/student/get/'+id
+        }).done(function (rs){
+            $("#id").val(rs.id);
+            $("#name").val(rs.name);
+            $("#password").val(rs.password);
+            $("#sex").val(rs.sex);
+            $("#score").val(rs.score);
+        })
+    }
+
+    function  deleteStudent(){
+    var id=prompt("请输入id");
+
+        if(confirm("你是否真的要删除吗？")){
+            $.ajax({
+                url:"webapi/student/delete/"+id,
+                method:"delete"
+
+            }).done(function (){
+                loadTable();
+
+            });
+
+        }
+    }
+
+
+    function loadTable(){
+
+        $('#stuTable').bootstrapTable({
+            url: '/webapi/student/getbypage',
+            striped:true,//设置为true会有隔行变色的效果
+            pagination:true,//设置为true会在底部显示分页条
+            singleSelect: false,//设置为true 将禁止多选
+            pageSize:3,//如果设置了分页，每页数据条数
+            pageNumber:1,//如果设置了分页，首页页码
+            sidePagination: "server",
+            queryParams:function (params){
+                let paraObj={
+                    size: params.limit,
+                    page:params.offset/params.limit,
+                    sort:"id",
+                    direct:"desc",
+                    name:$("#searchName").val()
+
+                };
+
+                return paraObj;
+            },
+            columns: [{
+                field: 'id',
+                title: '序号'
+            }, {
+                field: 'no',
+                title: '学号'
+            },{
+                field: 'name',
+                title: '姓名'
+            }, {
+                field: 'sex',
+                title: '性别'
+            }, {
+                field: 'score',
+                title: '成绩'
+            }, ]
+        })
+
+    }
+
+
+function submitStuForm(){
+
+    $("#formStudent").validate({
+        submitHandler: function(form)
+        {
+            var paraObj = $("#formStudent").serialize();
+            $.ajax({
+                method:"POST",
+                url:"/webapi/student/add",
+                data:paraObj
+
+
+            })
+
+                .done(function (result){
+                    if(result>0){
+                        window.location.reload();
+                    }else{
+                        alert("保存不成功！");
+                    }
+                });
+        }
+    })
+
+}
+
+$(function (){
+    $("#formStudent").validate();
+})
+
+
+    $(function () {
+
+        loadTable();
+
+    });
+
+
+</script>
+</body>
+</html>
